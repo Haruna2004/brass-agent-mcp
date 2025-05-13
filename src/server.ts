@@ -7,6 +7,7 @@ import {
 } from "./tools/confirmAccount";
 import { bulkBankCodeSchema, getMultipleBankCodes } from "./tools/getBankCode";
 import { bulkPaySchema, processMultiplePayments } from "./tools/processPayment";
+import { BANK_NAMES } from "./lib/bankList";
 
 const server = new McpServer({
   name: "Brass Agent MCP",
@@ -14,10 +15,13 @@ const server = new McpServer({
 });
 
 // Valid Bankname tool
+// server.tool("getValidBankName", "Convert the user input bank name into valid")
 
 server.tool(
   "getBankCode",
-  "Lookup and retrieve numerical bank codes for a list of bank names.",
+  `Lookup and retrieve numerical bank codes for a list of bank names. Ensure the bank name is on of these valid bank in the list provided: ${JSON.stringify(
+    BANK_NAMES
+  )} `,
   bulkBankCodeSchema.shape,
   getMultipleBankCodes
 );
