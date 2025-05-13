@@ -1,0 +1,11 @@
+{
+  "files.exclude": {
+    "**/node_modules": true,
+    // "**/.gitignore": true,
+    "**/bun.lock": true,
+    "**/tsconfig.json": true
+    // "**/package.json": true
+
+    // "**/note.md": true
+  }
+}
