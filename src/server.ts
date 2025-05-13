@@ -7,21 +7,15 @@ import {
 } from "./tools/confirmAccount";
 import { bulkBankCodeSchema, getMultipleBankCodes } from "./tools/getBankCode";
 import { bulkPaySchema, processMultiplePayments } from "./tools/processPayment";
-import { BANK_NAMES } from "./lib/bankList";
 
 const server = new McpServer({
   name: "Brass Agent MCP",
   version: "1.0.0",
 });
 
-// Valid Bankname tool
-// server.tool("getValidBankName", "Convert the user input bank name into valid")
-
 server.tool(
   "getBankCode",
-  `Lookup and retrieve numerical bank codes for a list of bank names. Ensure the bank name is on of these valid bank in the list provided: ${JSON.stringify(
-    BANK_NAMES
-  )} `,
+  `Lookup and retrieve numerical bank codes for a list of bank names.`,
   bulkBankCodeSchema.shape,
   getMultipleBankCodes
 );
@@ -43,12 +37,10 @@ server.tool(
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.log("Weather MCP Server running on stdio");
+  console.log("Brass MCP Server running on stdio");
 }
 
 main().catch((error) => {
   console.error("Fatal error in main():", error);
   process.exit(1);
 });
-
-// https://modelcontextprotocol.io/specification/2024-11-05/server/utilities/completion

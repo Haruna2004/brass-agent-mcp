@@ -1,10 +1,15 @@
 import { z } from "zod";
 import { BANK_LIST } from "../lib/bankList";
+import { BANK_NAMES } from "../lib/bankList";
 
 export const bulkBankCodeSchema = z.object({
   detectedBanks: z
     .array(z.string())
-    .describe("List of bank names detected from user conversation."),
+    .describe(
+      `List of bank names detected from user conversation. Ensure the bank names are on of these valid bank in the list provided: ${JSON.stringify(
+        BANK_NAMES
+      )} if you can't see a match ask users to rephrase the bank name`
+    ),
 });
 
 export async function getMultipleBankCodes({
