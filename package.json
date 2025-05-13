@@ -1,9 +1,16 @@
 {
-  "name": "dev-test-mcp",
+  "name": "brass-agent-mcp",
   "version": "1.0.0",
-  "module": "index.ts",
   "type": "module",
   "private": false,
+  "bin": {
+    "brass-agent-mcp": "dist/server.js"
+  },
+  "scripts": {
+    "start": "node dist/server.js",
+    "dev": "bun run src/server.ts",
+    "build": "bun build src/server.ts --outfile dist/server.js --target node"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
