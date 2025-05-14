@@ -44,25 +44,26 @@ export const bulkPaySchema = z.object({
   paymentsToProcess: z
     .array(singlePaySchema)
     .describe("List of payments to execute after user approval."),
+  sourceAccount: z.string().describe("The source account ID."),
 });
 
-const brassAccountId = process.env.BRASS_ACCOUNT_ID;
+// const brassAccountId = process.env.BRASS_ACCOUNT_ID;
 const brassToken = process.env.BRASS_PA_TOKEN;
 const brassService = new BrassService();
 
 export async function processMultiplePayments({
   paymentsToProcess,
+  sourceAccount,
 }: z.infer<typeof bulkPaySchema>) {
   console.log("Attemping to process payments for:", paymentsToProcess);
 
-  const sourceAccount = brassAccountId ?? "";
   if (!sourceAccount) {
-    console.error("BRASS_ACCOUNT_ID is not set, cannot process payment");
+    console.error("BRASS_ACCOUNT_ID is not given, cannot process payment");
     return {
       content: [
         {
           type: "text" as const,
-          text: "BRASS_ACCOUNT_ID is not set, cannot process payment",
+          text: "BRASS_ACCOUNT_ID is not given, cannot process payment",
         },
       ],
     };
