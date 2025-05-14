@@ -10,11 +10,13 @@ import {
 import { bulkBankCodeSchema, getMultipleBankCodes } from "./tools/getBankCode";
 import { bulkPaySchema, processMultiplePayments } from "./tools/processPayment";
 import {
+  extractCoreAccountDetails,
   getAccountDetails,
   getAccountSchema,
   listAccountSchema,
   listAllAccounts,
 } from "./tools/getAccounts";
+import { BrassService } from "./services/brass";
 
 const server = new McpServer({
   name: "Brass Agent MCP",
@@ -43,19 +45,44 @@ server.tool(
 );
 
 // List Accounts
-server.tool(
-  "listAccounts",
-  "List all accounts",
-  listAccountSchema.shape,
-  listAllAccounts
-);
+// server.tool(
+//   "listAccounts",
+//   "List all accounts",
+//   listAccountSchema.shape,
+//   listAllAccounts
+// );
 
 // Get an Account details
-server.tool(
-  "getAccount",
-  "Get an account details",
-  getAccountSchema.shape,
-  getAccountDetails
+// server.tool(
+//   "getAccount",
+//   "Get an account details",
+//   getAccountSchema.shape,
+//   getAccountDetails
+// );
+
+server.resource(
+  "accounts", // Resource name
+  "config://core/accounts", // Resource URI
+  async (uri) => {
+    // Read callback
+    const brassService = new BrassService();
+    const brassToken = process.env.BRASS_PA_TOKEN;
+    const response = (await brassService.listAccounts(brassToken)) as any;
+
+    if (!response.success) {
+      throw new Error(`Failed to fetch accounts: ${response.message}`);
+    }
+
+    return {
+      contents: [
+        {
+          uri: uri.href,
+          mimeType: "application/json",
+          text: JSON.stringify(response.data.map(extractCoreAccountDetails)),
+        },
+      ],
+    };
+  }
 );
 
 async function main() {

@@ -5,14 +5,18 @@ const brassToken = process.env.BRASS_PA_TOKEN;
 const brassService = new BrassService();
 
 export const getAccountSchema = z.object({
-  accountId: z.string(),
+  accountId: z.string().describe("The ID of the account details to retrieve."),
 });
 
 export const listAccountSchema = z.object({
-  limit: z.number().optional().default(10),
+  limit: z
+    .number()
+    .optional()
+    .default(10)
+    .describe("The maximum first number of accounts to return."),
 });
 
-function extractCoreAccountDetails(data: any) {
+export function extractCoreAccountDetails(data: any) {
   if (!data) {
     return null;
   }
@@ -32,7 +36,7 @@ function extractCoreAccountDetails(data: any) {
   };
 }
 
-function toolResponse(payload: string) {
+export function toolResponse(payload: string) {
   return {
     content: [
       {
