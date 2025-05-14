@@ -79,13 +79,56 @@ export class BrassService {
 
       const result = response.data.data;
 
-      if (!result) return { success: false, message: "Error from request" };
+      if (!result)
+        return { success: false, message: "Error from Brass Service request" };
       console.log("Payment Success", result);
 
       // return { success: true, data: result };
       return { success: true, data: {} };
     } catch (error) {
       console.log("Payment Failed");
+      if (axios.isAxiosError<object>(error))
+        console.log("Error Data", error.response?.data);
+      return { success: false, message: "Error from Brass Service request" };
+    }
+  }
+
+  async listAccounts(brassToken?: string) {
+    try {
+      const response = await this.api.get<{ data: object }>(PATH.listAccounts, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${brassToken}`,
+        },
+      });
+      const result = response.data.data;
+
+      if (!result)
+        return { success: false, message: "Error from Brass Service request" };
+      return { success: true, data: result };
+    } catch (error) {
+      if (axios.isAxiosError<object>(error))
+        console.log("Error Data", error.response?.data);
+      return { success: false, message: "Error from Brass Service request" };
+    }
+  }
+
+  async getAccount(accountId: string, brassToken?: string) {
+    try {
+      const response = await this.api.get<{ data: object }>(
+        `${PATH.getAccount}/${accountId}`,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${brassToken}`,
+          },
+        }
+      );
+      const result = response.data.data;
+      if (!result) return { success: false, message: "Error from request" };
+
+      return { success: true, data: result };
+    } catch (error) {
       if (axios.isAxiosError<object>(error))
         console.log("Error Data", error.response?.data);
       return { success: false, message: "Error from request" };

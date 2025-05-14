@@ -9,6 +9,12 @@ import {
 } from "./tools/confirmAccount";
 import { bulkBankCodeSchema, getMultipleBankCodes } from "./tools/getBankCode";
 import { bulkPaySchema, processMultiplePayments } from "./tools/processPayment";
+import {
+  getAccountDetails,
+  getAccountSchema,
+  listAccountSchema,
+  listAllAccounts,
+} from "./tools/getAccounts";
 
 const server = new McpServer({
   name: "Brass Agent MCP",
@@ -34,6 +40,22 @@ server.tool(
   "Execute a list of payment transactions after explicit user approval for the batch has been received.",
   bulkPaySchema.shape,
   processMultiplePayments
+);
+
+// List Accounts
+server.tool(
+  "listAccounts",
+  "List all accounts",
+  listAccountSchema.shape,
+  listAllAccounts
+);
+
+// Get an Account details
+server.tool(
+  "getAccount",
+  "Get an account details",
+  getAccountSchema.shape,
+  getAccountDetails
 );
 
 async function main() {
