@@ -18036,7 +18036,9 @@ class StdioServerTransport {
 var BRASS_API_BASE_URL = "https://api.getbrass.co";
 var BRASS_API_PATHS = {
   resolveName: "/banking/banks/account-name",
-  createPayment: "/banking/payments/create"
+  createPayment: "/banking/payments/create",
+  listAccounts: "/banking/accounts?page=1&limit=10&include_virtual_accounts=true",
+  getAccount: "/banking/accounts"
 };
 
 // node_modules/axios/lib/helpers/bind.js
@@ -21200,11 +21202,47 @@ class BrassService {
       });
       const result = response.data.data;
       if (!result)
-        return { success: false, message: "Error from request" };
+        return { success: false, message: "Error from Brass Service request" };
       console.log("Payment Success", result);
       return { success: true, data: {} };
     } catch (error) {
       console.log("Payment Failed");
+      if (axios_default.isAxiosError(error))
+        console.log("Error Data", error.response?.data);
+      return { success: false, message: "Error from Brass Service request" };
+    }
+  }
+  async listAccounts(brassToken) {
+    try {
+      const response = await this.api.get(BRASS_API_PATHS.listAccounts, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${brassToken}`
+        }
+      });
+      const result = response.data.data;
+      if (!result)
+        return { success: false, message: "Error from Brass Service request" };
+      return { success: true, data: result };
+    } catch (error) {
+      if (axios_default.isAxiosError(error))
+        console.log("Error Data", error.response?.data);
+      return { success: false, message: "Error from Brass Service request" };
+    }
+  }
+  async getAccount(accountId, brassToken) {
+    try {
+      const response = await this.api.get(`${BRASS_API_PATHS.getAccount}/${accountId}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${brassToken}`
+        }
+      });
+      const result = response.data.data;
+      if (!result)
+        return { success: false, message: "Error from request" };
+      return { success: true, data: result };
+    } catch (error) {
       if (axios_default.isAxiosError(error))
         console.log("Error Data", error.response?.data);
       return { success: false, message: "Error from request" };
@@ -21372,13 +21410,15 @@ var BANK_NAMES = [
 
 // src/tools/getBankCode.ts
 var bulkBankCodeSchema = z.object({
-  detectedBanks: z.array(z.string()).describe(`List of bank names detected from user conversation. Ensure the bank names are on of these valid bank in the list provided: ${JSON.stringify(BANK_NAMES)} if you can't see a match ask users to rephrase the bank name`)
+  detectedBanks: z.array(z.string()).describe(`List of bank names detected from user conversation`),
+  detectedBanksValidated: z.array(z.enum(BANK_NAMES)).describe(`Match detected bank name to one of the valid bank names of in the enum provided`)
 });
 async function getMultipleBankCodes({
-  detectedBanks
+  detectedBanks,
+  detectedBanksValidated
 }) {
   console.log("Attemping to resolve bank codes for:", detectedBanks);
-  const results = await Promise.allSettled(detectedBanks.map(async (bankName) => {
+  const results = await Promise.allSettled(detectedBanksValidated.map(async (bankName) => {
     if (!bankName || bankName.trim() === "")
       return {
         detectedBank: bankName,
@@ -21444,23 +21484,23 @@ var singlePaySchema = z.object({
   _inputIndex: z.number().optional().describe("Internal index to track original request")
 });
 var bulkPaySchema = z.object({
-  paymentsToProcess: z.array(singlePaySchema).describe("List of payments to execute after user approval.")
+  paymentsToProcess: z.array(singlePaySchema).describe("List of payments to execute after user approval."),
+  sourceAccount: z.string().describe("The source account ID.")
 });
-var brassAccountId = process.env.BRASS_ACCOUNT_ID;
 var brassToken2 = process.env.BRASS_PA_TOKEN;
 var brassService2 = new BrassService;
 async function processMultiplePayments({
-  paymentsToProcess
+  paymentsToProcess,
+  sourceAccount
 }) {
   console.log("Attemping to process payments for:", paymentsToProcess);
-  const sourceAccount = brassAccountId ?? "";
   if (!sourceAccount) {
-    console.error("BRASS_ACCOUNT_ID is not set, cannot process payment");
+    console.error("BRASS_ACCOUNT_ID is not given, cannot process payment");
     return {
       content: [
         {
           type: "text",
-          text: "BRASS_ACCOUNT_ID is not set, cannot process payment"
+          text: "BRASS_ACCOUNT_ID is not given, cannot process payment"
         }
       ]
     };
@@ -21518,6 +21558,52 @@ async function processMultiplePayments({
   };
 }
 
+// src/tools/getAccounts.ts
+var brassToken3 = process.env.BRASS_PA_TOKEN;
+var brassService3 = new BrassService;
+var getAccountSchema = z.object({
+  accountId: z.string().describe("The ID of the account details to retrieve.")
+});
+var listAccountSchema = z.object({
+  limit: z.number().optional().default(10).describe("The maximum first number of accounts to return.")
+});
+function extractCoreAccountDetails(data) {
+  if (!data) {
+    return null;
+  }
+  return {
+    accountId: data.id,
+    accountName: data.name,
+    accountNumber: data.number,
+    ledgerBalance: data.ledger_balance ? data.ledger_balance.formatted : null,
+    availableBalance: data.available_balance ? data.available_balance.formatted : null,
+    pendingPayment: data.pending_outflows ? data.pending_outflows.formatted : null,
+    bankName: data.bank && data.bank.data ? data.bank.data.name : null,
+    bankCode: data.bank && data.bank.data ? data.bank.data.code : null
+  };
+}
+function toolResponse(payload) {
+  return {
+    content: [
+      {
+        type: "text",
+        text: payload
+      }
+    ]
+  };
+}
+async function listAllAccounts({
+  limit
+}) {
+  const response = await brassService3.listAccounts(brassToken3);
+  if (response.success) {
+    const accountList = response?.data?.map(extractCoreAccountDetails);
+    return toolResponse(JSON.stringify(accountList));
+  } else {
+    return toolResponse(`${response.message}`);
+  }
+}
+
 // src/server.ts
 var server = new McpServer({
   name: "Brass Agent MCP",
@@ -21526,6 +21612,7 @@ var server = new McpServer({
 server.tool("getBankCode", `Lookup and retrieve numerical bank codes for a list of bank names.`, bulkBankCodeSchema.shape, getMultipleBankCodes);
 server.tool("confirmAccount", "Verify and validate a list of bank account details, returning confirmed information or errors for each.", bulkConfirmAcctSchema.shape, confirmMultipleAccounts);
 server.tool("processPayment", "Execute a list of payment transactions after explicit user approval for the batch has been received.", bulkPaySchema.shape, processMultiplePayments);
+server.tool("listAccounts", "Show all available source accounts, details include: account name, account number, ledger balance, available balance, pending payment, bank name, bank code.", listAccountSchema.shape, listAllAccounts);
 async function main() {
   const transport = new StdioServerTransport;
   await server.connect(transport);
