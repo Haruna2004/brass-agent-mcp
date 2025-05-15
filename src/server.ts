@@ -7,12 +7,7 @@ import {
 } from "./tools/confirmAccount";
 import { bulkBankCodeSchema, getMultipleBankCodes } from "./tools/getBankCode";
 import { bulkPaySchema, processMultiplePayments } from "./tools/processPayment";
-import {
-  getAccountDetails,
-  getAccountSchema,
-  listAccountSchema,
-  listAllAccounts,
-} from "./tools/getAccounts";
+import { listAccountSchema, listAllAccounts } from "./tools/getAccounts";
 
 const server = new McpServer({
   name: "Brass Agent MCP",
@@ -46,17 +41,9 @@ server.tool(
 // List Accounts
 server.tool(
   "listAccounts",
-  "List all accounts",
+  "Show all available source accounts, details include: account name, account number, ledger balance, available balance, pending payment, bank name, bank code.",
   listAccountSchema.shape,
   listAllAccounts
-);
-
-// Get an Account details
-server.tool(
-  "getAccount",
-  "Get an account details",
-  getAccountSchema.shape,
-  getAccountDetails
 );
 
 async function main() {

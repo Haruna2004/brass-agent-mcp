@@ -5,29 +5,30 @@ import { BANK_NAMES } from "../lib/bankList";
 export const bulkBankCodeSchema = z.object({
   detectedBanks: z
     .array(z.string())
+    .describe(`List of bank names detected from user conversation`),
+
+  detectedBanksValidated: z
+    .array(z.enum(BANK_NAMES))
     .describe(
-      `List of bank names detected from user conversation. Ensure the bank names are on of these valid bank in the list provided: ${JSON.stringify(
-        BANK_NAMES
-      )} if you can't see a match ask users to rephrase the bank name`
+      `Match detected bank name to one of the valid bank names of in the enum provided`
     ),
 });
 
 export async function getMultipleBankCodes({
   detectedBanks,
+  detectedBanksValidated,
 }: z.infer<typeof bulkBankCodeSchema>) {
   console.log("Attemping to resolve bank codes for:", detectedBanks);
 
   // Match all bank codes
   const results = await Promise.allSettled(
-    detectedBanks.map(async (bankName) => {
+    detectedBanksValidated.map(async (bankName) => {
       if (!bankName || bankName.trim() === "")
         return {
           detectedBank: bankName,
           status: "error" as const,
           error: "No bank name provided",
         };
-
-      // aiService.getValidBankName(bankName) should have been here
 
       const bankCode = BANK_LIST[bankName];
 

@@ -47,7 +47,6 @@ export const bulkPaySchema = z.object({
   sourceAccount: z.string().describe("The source account ID."),
 });
 
-// const brassAccountId = process.env.BRASS_ACCOUNT_ID;
 const brassToken = process.env.BRASS_PA_TOKEN;
 const brassService = new BrassService();
 

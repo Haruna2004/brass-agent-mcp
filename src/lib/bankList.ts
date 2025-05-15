@@ -103,4 +103,4 @@ export const BANK_NAMES = [
   "Nibssussd Payments",
   "Xpress Payments",
   "Smartcash Payment Service Bank",
-];
+] as const;
